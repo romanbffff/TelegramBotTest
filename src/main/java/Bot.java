@@ -1,13 +1,7 @@
 import org.glassfish.jersey.jaxb.internal.XmlCollectionJaxbProvider;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
-import org.telegram.telegrambots.meta.api.methods.send.SendAnimation;
-import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
-import org.telegram.telegrambots.meta.api.objects.Document;
-import org.telegram.telegrambots.meta.api.objects.InputFile;
-import org.telegram.telegrambots.meta.api.objects.PhotoSize;
-import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.methods.send.*;
+import org.telegram.telegrambots.meta.api.objects.*;
 import org.telegram.telegrambots.meta.api.objects.games.Animation;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
@@ -21,7 +15,8 @@ class Bot extends TelegramLongPollingBot {
     public void onUpdateReceived(Update update) {
         if (update.hasMessage()) {
             Long chatId = update.getMessage().getChatId();
-            if (update.getMessage().hasText()) {
+            Message message = update.getMessage();
+            if (message.hasText()) {
                 String text = update.getMessage().getText();
 
                 SendMessage sendMessage = new SendMessage();
@@ -33,7 +28,7 @@ class Bot extends TelegramLongPollingBot {
                 } catch (TelegramApiException e) {
                     e.printStackTrace();
                 }
-            } else if (update.getMessage().hasAnimation()) {
+            } else if (message.hasAnimation()) {
                 Animation gif = update.getMessage().getAnimation();
 
                 SendAnimation sendAnimation = new SendAnimation();
@@ -45,8 +40,8 @@ class Bot extends TelegramLongPollingBot {
                 } catch (TelegramApiException e) {
                     e.printStackTrace();
                 }
-            } else if (update.getMessage().hasPhoto()) {
-                List<PhotoSize> photoSizes = update.getMessage().getPhoto();
+            } else if (message.hasPhoto()) {
+                List<PhotoSize> photoSizes = message.getPhoto();
                 PhotoSize photo = photoSizes.get(photoSizes.size() - 1);
 
                 SendPhoto sendPhoto = new SendPhoto();
@@ -58,8 +53,8 @@ class Bot extends TelegramLongPollingBot {
                 } catch (TelegramApiException e) {
                     e.printStackTrace();
                 }
-            } else if (update.getMessage().hasDocument()) {
-                Document document = update.getMessage().getDocument();
+            } else if (message.hasDocument()) {
+                Document document = message.getDocument();
 
                 SendDocument sendDocument = new SendDocument();
                 sendDocument.setChatId(chatId.toString());
@@ -69,6 +64,45 @@ class Bot extends TelegramLongPollingBot {
                     execute(sendDocument);
                 } catch (TelegramApiException e) {
                     e.printStackTrace();
+                }
+            } else if (message.hasVoice()) {
+                Voice voice = message.getVoice();
+
+                SendVoice sendVoice = new SendVoice();
+                sendVoice.setChatId(chatId.toString());
+                sendVoice.setVoice(new InputFile(voice.getFileId()));
+
+                try {
+                    execute(sendVoice);
+                } catch (TelegramApiException e) {
+                    e.printStackTrace();
+                }
+            } else if (message.hasLocation()) {
+                Double latitude = message.getLocation().getLatitude();
+                Double longitude = message.getLocation().getLongitude();
+
+                if (latitude != null && longitude != null) {
+                    SendLocation sendLocation = new SendLocation();
+                    sendLocation.setChatId(message.getChatId().toString());
+                    sendLocation.setLatitude(latitude);
+                    sendLocation.setLongitude(longitude);
+
+                    try {
+                        execute(sendLocation);
+                    } catch (TelegramApiException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    // Якщо геолокація містить порожні значення
+                    SendMessage sendMessage = new SendMessage();
+                    sendMessage.setChatId(message.getChatId().toString());
+                    sendMessage.setText("Вибачте, але геолокацію не було відправлено.");
+
+                    try {
+                        execute(sendMessage);
+                    } catch (TelegramApiException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }
