@@ -13,38 +13,34 @@ import java.util.Properties;
 
 class Bot extends TelegramLongPollingBot {
     @Override
-    // TODO додати перевірку на null (.NullPointerException) т.к у гіф-анімацій немає імені яке йде за стандартом null
     public void onUpdateReceived(Update update) {
-        if (update.hasMessage() && update.getMessage().hasAnimation()) {
-            Animation gif = update.getMessage().getAnimation();
+        if (update.hasMessage()) {
             Long chatId = update.getMessage().getChatId();
+            if (update.getMessage().hasText()) {
+                String text = update.getMessage().getText();
 
-            SendAnimation sendAnimation = new SendAnimation();
-            sendAnimation.setChatId(chatId.toString());
-            sendAnimation.setAnimation(new InputFile(gif.getFileId()));
+                SendMessage sendMessage = new SendMessage();
+                sendMessage.setChatId(chatId.toString());
+                sendMessage.setText(text);
 
-            try {
-                execute(sendAnimation);
-            } catch (TelegramApiException e) {
-                e.printStackTrace();
+                try {
+                    execute(sendMessage);
+                } catch (TelegramApiException e) {
+                    e.printStackTrace();
+                }
+            } else if (update.getMessage().hasAnimation()) {
+                Animation gif = update.getMessage().getAnimation();
+
+                SendAnimation sendAnimation = new SendAnimation();
+                sendAnimation.setChatId(chatId.toString());
+                sendAnimation.setAnimation(new InputFile(gif.getFileId()));
+
+                try {
+                    execute(sendAnimation);
+                } catch (TelegramApiException e) {
+                    e.printStackTrace();
+                }
             }
-        }
-        String message = update.getMessage().getText();
-        sendMsg(update.getMessage().getChatId().toString(), message);
-
-    }
-
-    public synchronized void sendMsg(String chatId, String s) {
-        SendMessage sendMessage = new SendMessage();
-        sendMessage.enableMarkdown(true);
-        sendMessage.setChatId(chatId);
-        sendMessage.setText(s);
-        try {
-            execute(sendMessage);
-        } catch (TelegramApiException e) {
-            System.out.println(e);
-
-
         }
     }
 
